@@ -1,6 +1,8 @@
 function cfg = config(project_root)
 %CONFIG Shared simulation settings. Change values HERE, not in models/.
-% Parameters below are PROVISIONAL until Member 1 verifies source applicability.
+% Environment values cross-checked with Bor-Yaliniz et al. (2018), Table I,
+% as provided by Member 1. They are literature model parameters, NOT field measurements.
+% f_Hz = 2.4e9 is a scenario assumption, not empirical validation at 2.4 GHz.
     if nargin < 1 || isempty(project_root)
         project_root = fileparts(mfilename('fullpath'));
     end
@@ -18,12 +20,16 @@ function cfg = config(project_root)
     cfg.base_environment = 'urban';
     cfg.environment_names = {'urban', 'suburban'};
 
-    % Illustrative parameter sets widely quoted with the Al-Hourani model.
-    % These MUST be verified by Member 1 and the exact frequency/environment
-    % applicability documented before numbers are used in the final report.
+    % Fixed literature environment parameters from Member 1's verified handover:
+    % Bor-Yaliniz, El-Keyi, Yanikomeroglu, IEEE TWC 2018, Table I.
+    % DOI: 10.1109/TWC.2018.2874230
+    % a, b: dimensionless; eta_los_dB, eta_nlos_dB: dB.
     cfg.environments.urban = struct( ...
         'a', 9.61, 'b', 0.16, 'eta_los_dB', 1.0, 'eta_nlos_dB', 20.0);
     cfg.environments.suburban = struct( ...
         'a', 4.88, 'b', 0.43, 'eta_los_dB', 0.1, 'eta_nlos_dB', 21.0);
-    cfg.params_reviewed = false;
+    cfg.params_reviewed = true; % Table I values and units cross-checked
+    cfg.parameter_source = 'Bor-Yaliniz et al. (2018), Table I';
+    cfg.parameter_source_doi = '10.1109/TWC.2018.2874230';
+    cfg.frequency_is_assumed = true; % NOT a field-validated 2.4 GHz setup
 end

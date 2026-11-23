@@ -1,61 +1,25 @@
-PIPELINE NHÓM UAV A2G – MATLAB – 7 NGÀY
-Phiên bản: 3.0 | Phạm vi: Hướng A – kênh truyền UAV–trạm mặt đất
+PIPELINE NGẮN – BẢN 7 NGÀY / MATLAB (v2.0)
 
-MỤC TIÊU:
-- Mô hình hình học liên kết (d, theta).
-- Mô hình suy hao không gian tự do FSPL.
-- Mô hình P(LoS) Al-Hourani.
-- Mô hình suy hao trung bình xác suất LoS/NLoS.
-- 3 kịch bản: khoảng cách, độ cao, so sánh môi trường.
-- 3 CSV + ít nhất 4 đồ thị và nhận xét vật lý.
-KHÔNG LÀM: BER, fading nhanh, Doppler, điều chế, OFDM, MIMO, mạng, NS-3.
+PHẠM VI: Hình học -> FSPL -> P(LoS) -> Path Loss trung bình; 1 UAV, 1 trạm mặt đất.
+THAM SỐ: TV1 đã bàn giao Urban/Suburban theo Bor-Yaliniz et al. (2018), Table I.
+GIẢ ĐỊNH: f=2.4 GHz, h=100 m, hg=1.5 m, r=500 m. Không phải đo đạc thực địa.
+KHÔNG LÀM: Fading ngẫu nhiên, Doppler, BER, SNR, giao thức mạng, NS-3, phần cứng.
 
-CÔNG NGHỆ CHỐT: MATLAB .m (không cần Simulink, không cần toolbox khác).
-GIỮ FILE PYTHON CŨ NẾU CẦN THAM KHẢO, NHƯNG KHÔNG DÙNG TRONG PIPELINE NÀY.
+DAY 1: Khóa interface, xác định schema CSV, phân công độc lập.
+DAY 2: TV1 – tài liệu; TV2 – mô hình; TV3 – template đồ thị.
+DAY 3: TV1 bàn giao bảng tham số; TV2 tích hợp; TV3 chuẩn bị script.
+DAY 4: TV2 chạy `run_tests`, `main` trên MATLAB, xuất 3 CSV chính thức.
+DAY 5: TV3 tạo 4 đồ thị từ CSV; TV1 kiểm tra các nhận xét vật lý.
+DAY 6: Đối chiếu công thức-code-số liệu-đồ thị, kiểm tra trích dẫn.
+DAY 7: Chốt báo cáo và thuyết trình; không mở rộng phạm vi.
 
-PHÂN CÔNG:
-- TV1: docs/parameters.md, docs/references.md, nội dung lý thuyết.
-- TV2: config.m, main.m, models/*.m, simulations/scenario_*.m,
-       simulations/make_result_table.m, tests/run_tests.m, CSV sinh tự động.
-- TV3: simulations/plot_results.m, results/figures/*.png,
-       report/outline.md, report/report_draft.md và nhận xét đồ thị.
+FILE ĐẦU RA:
+- results/csv/distance.csv (201 hàng)
+- results/csv/altitude.csv (201 hàng)
+- results/csv/environment.csv (402 hàng)
+- docs/CSV_SCHEMA.md (hợp đồng giao diện cho TV3)
+- docs/member2_handover.md (thông tin bàn giao)
+- results/figures/*.png (TV3 tạo sau khi chạy plot_results)
 
-SCHEMA CSV (đơn vị gắn trong tên):
-scenario,environment,f_Hz,h_m,hg_m,r_m,d_m,theta_deg,fspl_dB,p_los,pl_avg_dB
-
-FILE ĐẦU RA TỪ CODE:
-- results/csv/distance.csv
-- results/csv/altitude.csv
-- results/csv/environment.csv
-- results/figures/pathloss_vs_distance.png
-- results/figures/los_vs_altitude.png
-- results/figures/pathloss_vs_altitude.png
-- results/figures/environment_comparison.png
-KHÔNG sửa trực tiếp CSV/PNG; sửa config.m rồi chạy lại.
-
-KẾ HOẠCH:
-Ngày 1: TV1 đối chiếu nguồn; TV2 chốt giao diện hàm và CSV; TV3 chốt đồ thị.
-Ngày 2: TV1 chốt bảng tham số; TV2 hoàn thiện mô hình; TV3 khung báo cáo.
-Ngày 3: TV2 kiểm thử và bàn giao code; TV3 đọc thử CSV; TV1 phản biện giả định.
-Ngày 4: TV2 chạy 3 kịch bản chính thức; TV3 xuất hình; TV1 soát tham số.
-Ngày 5: Viết nhận xét định lượng và hoàn thiện các chương báo cáo.
-Ngày 6: Kiểm tra chéo công thức – code – CSV – PNG – báo cáo.
-Ngày 7: Chốt code, slide và luyện phản biện.
-
-CHẤT LƯỢNG / ĐIỀU KIỆN CHỐT:
-[ ] Tham số a,b,eta Urban/Suburban và tần số có trích dẫn được TV1 duyệt.
-[ ] Các kiểm thử MATLAB pass.
-[ ] Cả 3 CSV sinh bởi main.m đúng schema.
-[ ] Có ít nhất 4 PNG sinh từ CSV, không tính lại mô hình trong plot_results.m.
-[ ] Nhận xét Path Loss và PLoS phù hợp ý nghĩa vật lý.
-[ ] Báo cáo ghi đây là mô phỏng thống kê, không phải số đo ngoài thực tế.
-
-LỆNH MATLAB:
-1. Chọn Current Folder là thư mục gốc project.
-2. main
-3. addpath('tests'); run_tests
-4. addpath('simulations'); plot_results
-
-CẢNH BÁO:
-Bộ tham số có sẵn trong config.m là PROVISIONAL cho đến khi TV1 xác minh
-nguồn gốc và tính phù hợp với tần số 2.4 GHz. Không dùng CSV trước khi chốt.
+KIỂM TRA CUỐI: 28 asserts trong `tests/run_tests.m` phải PASS trên MATLAB R2024b.
+QUAN TRỌNG: Bộ CSV kèm ZIP tính lại ngoài MATLAB, cần chạy `main` để ghi đè bằng CSV MATLAB trước bàn giao chính thức.

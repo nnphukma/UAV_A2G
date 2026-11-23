@@ -1,0 +1,48 @@
+**THÔNG BÁO BÀN GIAO THAM SỐ MÔ HÌNH A2G – THÀNH VIÊN 1**
+
+Mình đã xác minh bộ tham số môi trường theo bài báo:
+
+I. Environment parameters
+
+| Parameter | Suburban | Urban |
+|---|---:|---:|
+| a | 4.88 | 9.61 |
+| b | 0.43 | 0.16 |
+| eta_LoS_dB | 0.1 | 1.0 |
+| eta_NLoS_dB | 21.0 | 20.0 |
+
+Nguồn: Bor-Yaliniz et al. (2018), Table I – Channel Model Parameters of Different Environments.
+
+DOI: https://doi.org/10.1109/TWC.2018.2874230
+
+II. Scenario parameters
+
+- Carrier frequency: 2.4e9 Hz
+- UAV altitude baseline: 100 m
+- Ground antenna height: 1.5 m
+- Horizontal distance baseline: 500 m
+- Speed of light: 299792458 m/s
+
+Đây là các giá trị kịch bản do nhóm lựa chọn, không phải tham số lấy từ bài báo.
+
+III. Sweep ranges
+
+- Distance scenario: r = 100–3000 m.
+- Altitude scenario: h = 20–300 m.
+- Environment scenario: Suburban và Urban.
+
+IV. Model equations
+
+P_LoS = 1 / (1 + a * exp(-b * (theta_deg - a)))
+
+P_NLoS = 1 - P_LoS
+
+PL_LoS = FSPL_dB + eta_LoS_dB
+
+PL_NLoS = FSPL_dB + eta_NLoS_dB
+
+PL_avg = P_LoS * PL_LoS + P_NLoS * PL_NLoS
+
+**Quy ước:** f sử dụng Hz, khoảng cách sử dụng m, góc sử dụng độ, Path Loss sử dụng dB. Không tự thay đổi bộ tham số môi trường khi chưa trao đổi lại.
+
+Mình sẽ cập nhật file `docs/parameters.md` và `docs/references.md` để lưu thông tin chính thức.

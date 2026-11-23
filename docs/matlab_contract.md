@@ -1,15 +1,14 @@
-# Hợp đồng kỹ thuật MATLAB v1.0
+# HỢP ĐỒNG KỸ THUẬT MATLAB – v2.0 (đã tiếp nhận TV1)
 
-- Chỉ sử dụng MATLAB base; không yêu cầu Simulink hay toolbox trả phí.
-- Dùng các đơn vị: f_Hz (Hz), r_m/h_m/hg_m/d_m (m), theta_deg (độ),
-  fspl_dB/pl_avg_dB (dB), công suất dBm.
-- Mọi hàm vật lý nằm trong `models/`. Hàm phải thuần tính toán.
-- Chỉ sửa giá trị mô phỏng trong `config.m`, không hard-code tại scenario.
-- `main.m` gọi đúng `scenario_distance`, `scenario_altitude`,
-  `scenario_environment`; mỗi hàm xuất CSV tương ứng.
-- `plot_results.m` chỉ được đọc CSV để vẽ đồ thị, không tính lại công thức.
-- CSV schema chính thức: `scenario,environment,f_Hz,h_m,hg_m,r_m,d_m,theta_deg,fspl_dB,p_los,pl_avg_dB`.
-- Nếu Thành viên 1 thay thông số môi trường: sửa `config.m`, chạy lại `main`
-  và `plot_results`, không tự chỉnh CSV/PNG.
-- Bản mặc định là tham số có trạng thái `PROVISIONAL`; không coi là kết quả đo.
-- Hãy giữ file `.py` đã có nếu cần tham khảo, nhưng không sử dụng chúng trong pipeline MATLAB.
+- Chỉ sử dụng MATLAB cơ bản; không yêu cầu Simulink hoặc toolbox bổ sung.
+- Đơn vị cố định: `f_Hz` (Hz), khoảng cách và độ cao (m), `theta_deg` (độ), loss (dB).
+- `models/*.m` là hàm tính thuần túy; không ghi file, không hard-code tham số môi trường.
+- `config.m` lưu cài đặt, hai môi trường: Urban, Suburban.
+- Bộ tham số đã được TV1 bàn giao, đối chiếu với Bor-Yaliniz et al. (2018), Table I; nguồn ghi trong `docs/parameters.md`.
+- `f_Hz=2.4e9` là **giả định khảo sát**; không thể hiện số liệu đo thực nghiệm ở 2.4 GHz.
+- `main.m` gọi `scenario_distance`, `scenario_altitude`, `scenario_environment`.
+- Kết quả CSV nằm ở `results/csv/`: `distance.csv`, `altitude.csv`, `environment.csv`.
+- Schema xem `docs/CSV_SCHEMA.md` (11 cột, không được đổi nếu chưa thống nhất).
+- `plot_results.m` chỉ đọc CSV và vẽ 4 PNG; TV3 có thể chỉnh bố cục.
+- TV2 phải chạy lại `run_tests`, `main` sau khi ghép bản cập nhật, và lấy CSV của MATLAB làm bản bàn giao chính thức.
+- CSV đi kèm bản ZIP là **bản tham chiếu tính độc lập ngoài MATLAB** để đối chiếu số học, không khẳng định đã được MATLAB tạo.
