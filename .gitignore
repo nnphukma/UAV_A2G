@@ -1,0 +1,11 @@
+# MATLAB / temporary outputs
+*.asv
+*.autosave
+*.mlx.autosave
+*.fig
+*~
+.DS_Store
+results/csv/*.csv
+results/figures/*.png
+!results/csv/.gitkeep
+!results/figures/.gitkeep
