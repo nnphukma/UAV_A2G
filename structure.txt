@@ -1,0 +1,28 @@
+Folder PATH listing for volume New Volume
+Volume serial number is DBFA-C0C0
+D:.
+|   config.py
+|   main.py
+|   structure.txt
+|   
++---docs
+|       pipeline.txt
+|       
++---models
+|       fspl.py
+|       geometry.py
+|       link_budget.py
+|       los_model.py
+|       pathloss.py
+|       
++---report
+|       outline.md
+|       
++---results
+|   +---csv
+|   \---figures
+\---simulations
+        scenario_altitude.py
+        scenario_distance.py
+        scenario_environment.py
+        

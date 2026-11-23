@@ -1,0 +1,349 @@
+PIPELINE – ĐỀ TÀI UAV–GROUND STATION
+Phiên bản: 1.0
+Mục tiêu: Báo cáo giữa kỳ, thời gian còn lại < 2 tuần, nhóm 3 người.
+Định hướng: Hướng A – nghiên cứu kênh truyền Air-to-Ground (A2G).
+Nguyên tắc: tối giản phạm vi, tập trung sâu vào mô hình kênh truyền; không làm phần cứng, không mô phỏng giao thức mạng.
+
+============================================================
+0. PHẠM VI ĐÃ CHỐT
+============================================================
+
+Câu hỏi nghiên cứu:
+Độ cao UAV, khoảng cách ngang và môi trường truyền sóng ảnh hưởng như thế nào đến suy hao đường truyền A2G và công suất tín hiệu thu?
+
+Mô hình chính:
+1. Hình học liên kết UAV – trạm mặt đất.
+2. FSPL làm mô hình tham chiếu.
+3. Xác suất LoS theo mô hình Al-Hourani.
+4. Path Loss trung bình A2G, có xét suy hao bổ sung LoS/NLoS.
+5. (Tùy thời gian) Link Budget để suy ra công suất thu.
+
+Đầu ra bắt buộc:
+- Công thức và giải thích các mô hình trên.
+- Chương trình Python chạy được.
+- Ít nhất 3 kịch bản mô phỏng và các đồ thị có nhãn/trục/đơn vị.
+- Nhận xét định lượng, giải thích nguyên nhân vật lý.
+- Nêu rõ giả định và giới hạn mô hình.
+
+KHÔNG LÀM trong phiên bản giữa kỳ:
+- Không mô phỏng BPSK/QPSK, BER, chuỗi bit.
+- Không mô phỏng fading Rayleigh/Rician, Doppler, MIMO, OFDM.
+- Không mô phỏng LTE/5G/Wi-Fi, MAC, giao thức mạng, packet loss, delay.
+- Không tối ưu quỹ đạo UAV hoặc nhiều UAV.
+- Không xây dựng giao diện đồ họa.
+Các nội dung này chỉ được nhắc ngắn trong hướng phát triển nếu cần.
+
+Lưu ý quan trọng:
+- LoS probability và Path Loss trung bình là mô hình thống kê, không phải mô phỏng hình học từng tòa nhà.
+- FSPL là đường chuẩn lý tưởng; không gọi FSPL là mô hình thực tế đầy đủ.
+- Công suất thu/Link Budget là phần đánh giá nối tiếp, không thay thế nghiên cứu kênh truyền.
+- Không tự đặt tham số môi trường rồi trình bày như thông số phổ quát. Ghi rõ nguồn hoặc ghi là giả định khảo sát.
+- Chọn một bộ tham số nhất quán và dùng chung trong toàn nhóm.
+
+============================================================
+1. MÔ HÌNH VÀ CÔNG THỨC CẦN TRIỂN KHAI
+============================================================
+
+1.1 Hình học
+Đầu vào:
+  h       : độ cao UAV (m)
+  hg      : độ cao anten trạm mặt đất (m)
+  r       : khoảng cách ngang (m)
+
+Khoảng cách xiên:
+  d = sqrt(r^2 + (h - hg)^2)
+
+Góc ngẩng:
+  theta_deg = atan2(h - hg, r) * 180/pi
+
+Kiểm tra: d >= abs(h-hg); theta nằm trong [0, 90] độ với h >= hg và r >= 0.
+
+1.2 FSPL
+  FSPL_dB = 20*log10(4*pi*f*d/c)
+
+Trong đó f tính bằng Hz, d bằng m, c = 299792458 m/s.
+Có thể dùng công thức rút gọn:
+  FSPL_dB = 32.44 + 20*log10(f_MHz) + 20*log10(d_km)
+
+Chỉ dùng một cách tính trong code và kiểm tra hai cách cho kết quả tương đương.
+
+1.3 Xác suất LoS – Al-Hourani
+  P_LoS = 1 / (1 + a*exp(-b*(theta_deg - a)))
+
+Chú ý: đây là dạng công thức thường dùng trong mô hình Al-Hourani; a,b phụ thuộc môi trường. Phải đối chiếu công thức và bảng tham số từ bài báo gốc trước khi chốt. Không tự gán cùng một cặp a,b cho mọi môi trường.
+
+1.4 Path Loss có xét LoS/NLoS
+  PL_LoS  = FSPL_dB + eta_LoS
+  PL_NLoS = FSPL_dB + eta_NLoS
+  PL_avg  = P_LoS*PL_LoS + (1-P_LoS)*PL_NLoS
+
+eta_LoS và eta_NLoS là suy hao bổ sung (dB), chọn theo bảng tham số của mô hình/tài liệu và môi trường khảo sát.
+
+1.5 Link Budget (phần tối thiểu, nếu kịp)
+  P_RX_dBm = P_TX_dBm + G_TX_dBi + G_RX_dBi
+             - L_TX_dB - L_RX_dB - PL_avg_dB
+
+Nếu chưa có cấu hình thiết bị cụ thể, coi P_TX, gain anten và feeder loss là tham số giả định khảo sát; không khẳng định đây là cấu hình phần cứng thực.
+
+Không bắt buộc tính SNR trong phiên bản tối giản. Chỉ bổ sung nếu đã xác định được băng thông và Noise Figure có cơ sở.
+
+============================================================
+2. CÁC KỊCH BẢN MÔ PHỎNG BẮT BUỘC
+============================================================
+
+Kịch bản 1 – Ảnh hưởng khoảng cách ngang
+- Giữ h, hg, f và môi trường cố định.
+- Quét r từ gần đến xa (ví dụ 100–2000 m).
+- Vẽ: FSPL và PL_avg theo r.
+- Mục tiêu: chỉ ra suy hao tăng theo cự ly và chênh lệch giữa mô hình lý tưởng với A2G.
+
+Kịch bản 2 – Ảnh hưởng độ cao UAV
+- Giữ r, hg, f và môi trường cố định.
+- Quét h (ví dụ 30–150 m).
+- Vẽ: P_LoS và PL_avg theo h.
+- Mục tiêu: phân tích sự đánh đổi: tăng độ cao có thể cải thiện xác suất LoS nhưng đồng thời làm tăng khoảng cách xiên.
+
+Kịch bản 3 – So sánh môi trường
+- Dùng cùng h, r, hg, f.
+- So sánh ít nhất 2 môi trường; khuyến nghị 3 môi trường nếu tìm được tham số đáng tin cậy.
+- Vẽ: P_LoS và PL_avg theo r hoặc theo h.
+- Mục tiêu: chỉ ra ảnh hưởng của tham số môi trường.
+- Không dùng các bộ tham số không rõ nguồn chỉ để đủ số đường cong.
+
+Kịch bản 4 – Link Budget (tùy thời gian)
+- Chọn một bộ P_TX, G_TX, G_RX, L_TX, L_RX có ghi rõ giả định.
+- Vẽ P_RX theo r.
+- Có thể đánh dấu ngưỡng thu nếu có độ nhạy máy thu từ datasheet/nguồn đáng tin cậy.
+- Nếu không có ngưỡng thu đáng tin cậy, không kết luận phạm vi liên lạc tối đa; chỉ trình bày công suất thu tính toán.
+
+============================================================
+3. GIAO DIỆN DỮ LIỆU CHUNG GIỮA CÁC MODULE
+============================================================
+
+Dùng Python. Thống nhất đơn vị ngay từ đầu:
+- f_Hz: Hz
+- h_m, hg_m, r_m, d_m: mét
+- theta_deg: độ
+- path loss, gain, loss: dB/dBi
+- power: dBm
+
+Đề xuất giao diện hàm (người viết code phải giữ đúng tên/ý nghĩa hoặc báo nhóm trước khi đổi):
+
+geometry.py
+  slant_distance(r_m, h_m, hg_m) -> d_m
+  elevation_angle(r_m, h_m, hg_m) -> theta_deg
+
+fspl.py
+  fspl_db(f_Hz, d_m) -> fspl_dB
+
+los_model.py
+  los_probability(theta_deg, a, b) -> p_los
+
+pathloss.py
+  average_pathloss(fspl_dB, p_los, eta_los_dB, eta_nlos_dB) -> pl_avg_dB
+
+link_budget.py
+  received_power(p_tx_dBm, g_tx_dBi, g_rx_dBi,
+                 l_tx_dB, l_rx_dB, pl_dB) -> p_rx_dBm
+
+Quy ước:
+- Các hàm tính toán không tự đọc file, không tự vẽ đồ thị, không chứa tham số môi trường hard-code.
+- Tham số phải được truyền từ config hoặc đối số hàm.
+- Mỗi module có ít nhất 2 kiểm thử: một trường hợp tính tay/đơn giản và một trường hợp biên.
+- Một người không sửa module của người khác nếu chưa trao đổi.
+
+Cấu trúc thư mục gợi ý:
+  UAV_A2G/
+    README.md
+    requirements.txt
+    main.py
+    config.py
+    models/
+      geometry.py
+      fspl.py
+      los_model.py
+      pathloss.py
+      link_budget.py
+    simulations/
+      scenario_distance.py
+      scenario_altitude.py
+      scenario_environment.py
+    results/
+      csv/
+      figures/
+    report/
+      outline.md
+
+CSV đầu ra tối thiểu:
+  scenario, environment, f_Hz, h_m, hg_m, r_m, d_m, theta_deg,
+  fspl_dB, p_los, pl_avg_dB
+Nếu có Link Budget, thêm:
+  p_tx_dBm, g_tx_dBi, g_rx_dBi, l_tx_dB, l_rx_dB, p_rx_dBm
+
+============================================================
+4. PHÂN CÔNG 3 THÀNH VIÊN – LÀM SONG SONG
+============================================================
+
+NGƯỜI 1 – CƠ SỞ LÝ THUYẾT VÀ THAM SỐ MÔ HÌNH
+Nhiệm vụ:
+1. Tìm và đọc tài liệu gốc Al-Hourani.
+2. Viết phần tổng quan A2G, hình học, FSPL, LoS/NLoS và công thức Path Loss.
+3. Trích đúng công thức, định nghĩa ký hiệu và bảng tham số a, b, eta_LoS, eta_NLoS.
+4. Lập file parameters.md hoặc parameters.csv ghi rõ:
+   - tên môi trường
+   - a, b, eta_LoS, eta_NLoS
+   - tần số áp dụng/điều kiện áp dụng nếu tài liệu nêu
+   - nguồn, trang/bảng của tài liệu
+5. Kiểm tra tính nhất quán đơn vị và công thức.
+
+Đầu ra bàn giao:
+- theory.md (hoặc phần nội dung Word)
+- parameters.csv
+- danh sách tài liệu tham khảo đầy đủ.
+
+Không phụ thuộc code của Người 2. Không tự sửa công thức trong code; nếu phát hiện khác biệt phải báo và thống nhất.
+
+NGƯỜI 2 – LẬP TRÌNH CÁC MODULE MÔ HÌNH
+Nhiệm vụ:
+1. Tạo cấu trúc project và requirements.txt.
+2. Viết geometry.py, fspl.py, los_model.py, pathloss.py.
+3. Viết unit test/kiểm tra số học cho từng hàm.
+4. Viết config mẫu với tham số giả định tạm thời, tách khỏi code.
+5. Cung cấp một hàm tổng hợp hoặc main thử nghiệm nhận đầu vào và trả về các cột CSV đã thống nhất.
+6. Nếu còn thời gian, bổ sung link_budget.py.
+
+Đầu ra bàn giao:
+- mã nguồn chạy được
+- README hướng dẫn cài đặt/chạy
+- một file CSV mẫu để Người 3 kiểm tra pipeline đồ thị.
+
+Không chờ Người 1 hoàn tất báo cáo mới code. Ban đầu dùng tham số placeholder có ghi rõ; thay bằng tham số đã xác minh sau.
+
+NGƯỜI 3 – KỊCH BẢN, ĐỒ THỊ VÀ KHUNG BÁO CÁO
+Nhiệm vụ:
+1. Tạo trước bộ kịch bản và danh sách biến quét theo Mục 2.
+2. Viết script vẽ đồ thị từ CSV theo schema chung; không tự tính lại mô hình vật lý trong script vẽ.
+3. Chuẩn bị mẫu đồ thị: Path Loss-distance, LoS-altitude, Path Loss-altitude, so sánh môi trường.
+4. Viết khung Chương 1, Chương 3 (mô tả pipeline mô phỏng) và Chương 4 dưới dạng template.
+5. Khi có CSV chính thức, cập nhật đồ thị, bảng và nhận xét dựa trên số liệu thực tế.
+
+Đầu ra bàn giao:
+- scenario_plan.md
+- plot_results.py
+- các hình đồ thị từ CSV
+- report_outline.md và bản nháp phần kết quả.
+
+Không chờ code hoàn thiện: ban đầu tạo CSV giả lập đúng schema chỉ để kiểm tra script vẽ; tuyệt đối đánh dấu dữ liệu giả lập và không đưa vào báo cáo cuối.
+
+============================================================
+5. QUY TẮC PHỐI HỢP ĐỂ KHÔNG CHẶN NHAU
+============================================================
+
+Ngày đầu tiên:
+- Cả nhóm thống nhất đơn vị, tên biến, schema CSV và phạm vi mô hình.
+- Người 1 tìm tham số từ tài liệu.
+- Người 2 code với tham số placeholder.
+- Người 3 làm kịch bản, template báo cáo và script vẽ với CSV mẫu.
+
+Điểm tích hợp 1:
+- Người 1 bàn giao parameters.csv và công thức đã xác minh.
+- Người 2 nạp tham số qua config, không sửa logic nếu không cần.
+- Người 3 cập nhật nhãn môi trường và caption đồ thị.
+
+Điểm tích hợp 2:
+- Người 2 xuất CSV chính thức.
+- Người 3 chạy script vẽ và tạo hình.
+- Người 1 kiểm tra xem đồ thị có phù hợp xu hướng vật lý và mô hình tài liệu không.
+
+Điểm tích hợp 3:
+- Cả nhóm rà soát chéo công thức, đơn vị, nguồn và nhận xét.
+- Chỉ sau khi rà soát mới chốt báo cáo.
+
+Quy tắc:
+- Mỗi người làm trên file/module riêng.
+- Không đổi tên cột CSV hoặc tên hàm nếu chưa báo cả nhóm.
+- Mọi tham số đều nằm trong config/CSV; không hard-code trong thuật toán.
+- Không đưa dữ liệu placeholder vào báo cáo như kết quả chính thức.
+- Ghi lại phiên bản công thức và nguồn tham số để tránh mỗi người dùng một bộ khác nhau.
+
+============================================================
+6. LỊCH GỢI Ý 10 NGÀY
+============================================================
+
+Ngày 1:
+- Chốt phạm vi, schema dữ liệu, cấu trúc thư mục.
+- Ba người bắt đầu song song.
+
+Ngày 2–3:
+- Người 1: hoàn thành công thức và bảng tham số có nguồn.
+- Người 2: hoàn thành các module lõi và test.
+- Người 3: hoàn thành kịch bản, script vẽ khung và đề cương.
+
+Ngày 4:
+- Tích hợp công thức/tham số chính thức vào code.
+- Kiểm tra một số điểm tính tay.
+
+Ngày 5–6:
+- Chạy 3 kịch bản bắt buộc, xuất CSV và đồ thị.
+- Phân tích xu hướng, kiểm tra lỗi đơn vị và giả định.
+
+Ngày 7–8:
+- Hoàn thiện các chương báo cáo.
+- Viết nhận xét dựa trên đồ thị thực tế, bổ sung trích dẫn.
+
+Ngày 9:
+- Rà soát chéo: công thức ↔ code ↔ CSV ↔ đồ thị ↔ nhận xét.
+- Chạy lại toàn bộ chương trình từ đầu.
+
+Ngày 10:
+- Chốt báo cáo, tài liệu tham khảo, slide và phân chia phần thuyết trình.
+
+Nếu chỉ còn 7 ngày:
+- Bỏ kịch bản Link Budget nếu chưa đủ dữ liệu.
+- Chỉ so sánh 2 môi trường có bộ tham số đáng tin cậy.
+- Không thêm fading, Doppler, BER hoặc NS-3.
+
+============================================================
+7. TIÊU CHÍ HOÀN THÀNH (DEFINITION OF DONE)
+============================================================
+
+[ ] Phạm vi nghiên cứu và giả định được viết rõ.
+[ ] Công thức hình học và FSPL được kiểm tra.
+[ ] Công thức Al-Hourani và bảng tham số có nguồn.
+[ ] Mô hình Path Loss trung bình LoS/NLoS chạy đúng.
+[ ] Có kiểm tra đơn vị và ít nhất một phép tính đối chiếu bằng tay.
+[ ] Có ít nhất 3 kịch bản mô phỏng.
+[ ] Có ít nhất 4 đồ thị được tạo từ CSV chính thức.
+[ ] Mỗi đồ thị có tiêu đề, tên trục, đơn vị, chú giải.
+[ ] Nhận xét giải thích được xu hướng bằng cơ sở vật lý.
+[ ] Kết quả không bị trình bày nhầm thành đo đạc thực tế.
+[ ] Báo cáo trích dẫn nguồn cho công thức và tham số.
+[ ] Toàn bộ chương trình chạy lại được theo README.
+
+ƯU TIÊN KHI THIẾU THỜI GIAN:
+1. Đúng mô hình và tham số có nguồn.
+2. Code chạy đúng, có kiểm tra.
+3. Ba kịch bản và đồ thị rõ ràng.
+4. Phân tích kết quả.
+5. Trình bày hình thức.
+Không hy sinh tính đúng đắn để đổi lấy số lượng đồ thị.
+
+============================================================
+8. NGUỒN TÀI LIỆU CHÍNH
+============================================================
+
+1. Al-Hourani et al., “Optimal LAP Altitude for Maximum Coverage,”
+   IEEE Wireless Communications Letters, 2014.
+   DOI: https://doi.org/10.1109/LWC.2014.2342736
+
+2. Al-Hourani, Kandeepan, Jamalipour,
+   “Modeling Air-to-Ground Path Loss for Low Altitude Platforms
+   in Urban Environments,” IEEE GLOBECOM, 2014.
+   DOI: https://doi.org/10.1109/GLOCOM.2014.7037248
+
+3. “A Survey of Air-to-Ground Propagation Channel Modeling for
+   Unmanned Aerial Vehicles,” IEEE Communications Surveys & Tutorials, 2019.
+   DOI: https://doi.org/10.1109/COMST.2019.2915069
+
+Ghi chú cuối:
+Tài liệu gốc là nguồn quyết định cho công thức và bộ tham số. Không lấy tham số từ blog hoặc tự suy đoán. Nếu không xác minh được tham số cho một môi trường, hãy giảm số môi trường khảo sát thay vì tạo số liệu thiếu căn cứ.
