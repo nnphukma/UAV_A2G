@@ -1,0 +1,6 @@
+function p_rx_dBm = received_power(p_tx_dBm, g_tx_dBi, g_rx_dBi, ...
+    l_tx_dB, l_rx_dB, pl_dB)
+%RECEIVED_POWER Optional simplified link budget, all scalar/vector compatible.
+    p_rx_dBm = p_tx_dBm + g_tx_dBi + g_rx_dBi ...
+        - l_tx_dB - l_rx_dB - pl_dB;
+end
